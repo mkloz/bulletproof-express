@@ -1,0 +1,83 @@
+version: '3.1'
+
+services:
+  to-do-mysql:
+    container_name: to-do-mysql
+    image: mysql:8.0
+    env_file:
+      - .env
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+    restart: always
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '0.0.0.0', '--silent']
+      interval: 10s
+      retries: 10
+      start_period: 10s
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASS}
+      - MYSQL_TCP_PORT=${DB_PORT}
+      - MYSQL_DATABASE=${DB_NAME}
+    volumes:
+      - to_do_volume:/var/lib/mysql
+    networks:
+      - to_do_network
+
+  # adminer:
+  #   container_name: adminer
+  #   image: adminer
+  #   restart: always
+  #   env_file:
+  #       - .docker/dev/.env
+  #       - .env
+  #   environment:
+  #     ADMINER_DEFAULT_SERVER: ${DB_HOST}:${DB_PORT}
+  #     ADMINER_DESIGN: galkaev
+  # depends_on:
+  #   to-do-mysql:
+  #     condition: service_healthy
+  # networks:
+  #   - to_do_network
+  # links:
+  #   - to-do-mysql
+  # ports:
+  #   - 8080:8080
+
+  to-do:
+    build:
+      context: .
+      dockerfile: .docker/dev/Dockerfile
+    image: to-do
+    container_name: to-do
+    command: sh -c "npm run migrate && npm run seed && npm run start"
+    env_file:
+      - .env
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://to-do:${PORT:-3000}/api/health']
+      interval: 10s
+      retries: 10
+      start_period: 10s
+    environment:
+      - PORT=${PORT:-3000}
+      - DB_HOST=mysql
+      - DATABASE_URL=mysql://${DB_USER}:${DB_PASS}@mysql:${DB_PORT}/${DB_NAME}
+    depends_on:
+      to-do-mysql:
+        condition: service_healthy
+    restart: always
+    networks:
+      - to_do_network
+    links:
+      - to-do-mysql
+    ports:
+      - ${PORT:-3000}:${PORT:-3000}
+
+volumes:
+  to_do_volume:
+    name: to_do_volume
+    driver: local
+
+networks:
+  to_do_network:
+    name: to_do_network
+    driver: bridge

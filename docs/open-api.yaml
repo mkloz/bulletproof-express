@@ -1,0 +1,389 @@
+openapi: 3.0.0
+
+info:
+  title: To-Do App Backend API
+  description: API documentation for the backend of the To-Do app
+  version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+security: []
+paths:
+  /api/v1/users/me:
+    get:
+      summary: Get me
+      operationId: get-me
+      security:
+        - JWT: []
+      tags:
+        - User
+      responses:
+        '200':
+          $ref: '#/components/responses/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    patch:
+      summary: Updates a user
+      operationId: update-me
+      security:
+        - JWT: []
+      tags:
+        - User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                name:
+                  $ref: '#/components/schemas/Name'
+                password:
+                  $ref: '#/components/schemas/Password'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    delete:
+      summary: Delete a user by ID
+      operationId: delete-user
+      security:
+        - JWT: []
+      tags:
+        - User
+      responses:
+        '200':
+          $ref: '#/components/responses/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/v1/auth/login:
+    post:
+      summary: User login
+      operationId: login
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                email:
+                  $ref: '#/components/schemas/Email'
+                password:
+                  $ref: '#/components/schemas/Password'
+      responses:
+        '200':
+          $ref: '#/components/responses/TokensResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/auth/register:
+    post:
+      summary: User registration
+      operationId: register
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                name:
+                  $ref: '#/components/schemas/Name'
+                email:
+                  $ref: '#/components/schemas/Email'
+                password:
+                  $ref: '#/components/schemas/Password'
+      responses:
+        '201':
+          $ref: '#/components/responses/TokensResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/v1/auth/refresh:
+    post:
+      summary: Refresh JWT tokens
+      operationId: refresh
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                token:
+                  $ref: '#/components/schemas/Token'
+      responses:
+        '200':
+          $ref: '#/components/responses/TokensResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/v1/tasks:
+    get:
+      summary: Get all tasks
+      operationId: get-tasks
+      tags:
+        - Task
+      security:
+        - JWT: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTasks'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      summary: Create a new task
+      operationId: create-task
+      tags:
+        - Task
+      security:
+        - JWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                title:
+                  type: string
+                  example: 'Buy groceries'
+                description:
+                  type: string
+                  example: 'Buy milk, eggs, and bread'
+                isDone:
+                  type: boolean
+                  example: false
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/v1/tasks/{id}:
+    get:
+      summary: Get a task by ID
+      operationId: get-task
+      tags:
+        - Task
+      security:
+        - JWT: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the task to get
+          schema:
+            type: string
+            example: '1'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    patch:
+      summary: Update a task
+      operationId: update-task
+      tags:
+        - Task
+      security:
+        - JWT: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the task to update
+          schema:
+            type: string
+            example: '1'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                title:
+                  type: string
+                  example: 'Buy groceries'
+                description:
+                  type: string
+                  example: 'Buy milk, eggs, and bread'
+                isDone:
+                  type: boolean
+                  example: false
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    delete:
+      summary: Delete a task by ID
+      tags:
+        - Task
+      operationId: delete-task
+      security:
+        - JWT: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the task to delete
+          schema:
+            type: string
+            example: '1'
+      responses:
+        '200':
+          description: Task deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+components:
+  securitySchemes:
+    JWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    TokensResponse:
+      description: JWT tokens response
+      content:
+        application/json:
+          schema:
+            properties:
+              accessToken:
+                $ref: '#/components/schemas/Token'
+              refreshToken:
+                $ref: '#/components/schemas/Token'
+    UserResponse:
+      description: User response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/User'
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                example: '2021-09-01T12:00:00Z'
+              method:
+                type: string
+                example: GET
+              path:
+                type: string
+                nullable: true
+                example: /users/me
+              message:
+                type: string
+                example: 'Invalid request'
+            example:
+              message: 'Invalid request'
+  schemas:
+    PaginationLinks:
+      type: object
+      properties:
+        first:
+          type: string
+          example: http://localhost:8000/api/v1/tasks?page=1
+        last:
+          type: string
+          example: http://localhost:8000/api/v1/tasks?page=1
+        prev:
+          type: string
+          example: null
+        next:
+          type: string
+          example: null
+    PaginationMeta:
+      type: object
+      properties:
+        currentPage:
+          type: number
+          example: 1
+        itemCount:
+          type: number
+          example: 12
+        itemsPerPage:
+          type: number
+          example: 20
+        totalItems:
+          type: number
+          example: 120
+    PaginatedTasks:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        links:
+          $ref: '#/components/schemas/PaginationLinks'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    Token:
+      type: string
+      example: 'afdsgrsvc23ff32.dsdcreehfsvcfedcx3£r4fsfd.£RFDsfdsdfdsdf'
+    Name:
+      type: string
+      example: Michael
+    Password:
+      type: string
+      example: Pass123$
+    Email:
+      type: string
+      example: micha21cloz@gmail.com
+    User:
+      type: object
+      properties:
+        id:
+          type: number
+          example: 1
+        name:
+          type: string
+          example: Michael
+        email:
+          type: string
+          example: micha21cloz@gmail.com
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          nullable: true
+          type: string
+        isDone:
+          type: boolean
+      required:
+        - id
+        - title
+        - completed
